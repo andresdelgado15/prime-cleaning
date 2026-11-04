@@ -10,6 +10,7 @@ $TO        = 'info@primecleaningteam.com.au';      // where enquiries are delive
 $FROM      = 'website@primecleaningteam.com.au';   // must be an address on your own domain
 $SUBJECT   = 'New enquiry – Prime Cleaning website';
 
+date_default_timezone_set('Australia/Melbourne');
 header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -18,11 +19,37 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Only accept posts sent from this website's own pages
+$origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '';
+$host   = parse_url('http://' . ($_SERVER['HTTP_HOST'] ?? ''), PHP_URL_HOST);
+if ($origin !== '' && parse_url($origin, PHP_URL_HOST) !== $host) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'Forbidden']);
+    exit;
+}
+
 // Honeypot: real visitors leave this hidden field empty
 if (!empty($_POST['website'])) {
     echo json_encode(['ok' => true]);
     exit;
 }
+
+// Privacy Policy consent is required (APP 3 / APP 5)
+if (($_POST['consent'] ?? '') !== 'yes') {
+    http_response_code(422);
+    echo json_encode(['ok' => false, 'error' => 'Consent is required']);
+    exit;
+}
+
+// Basic flood protection: one enquiry every 30 seconds per visitor
+$ipHash   = hash('sha256', ($_SERVER['REMOTE_ADDR'] ?? '') . __FILE__);
+$lockFile = sys_get_temp_dir() . '/pct_' . $ipHash;
+if (is_file($lockFile) && time() - filemtime($lockFile) < 30) {
+    http_response_code(429);
+    echo json_encode(['ok' => false, 'error' => 'Too many requests']);
+    exit;
+}
+@touch($lockFile);
 
 function clean($key, $max = 2000) {
     $value = isset($_POST[$key]) ? trim((string) $_POST[$key]) : '';
@@ -52,7 +79,7 @@ foreach ($fields as $label => $value) {
         $body .= str_pad($label . ':', 10) . $value . "\n";
     }
 }
-$body .= "\nSent: " . date('Y-m-d H:i') . "\nIP: " . ($_SERVER['REMOTE_ADDR'] ?? '-') . "\n";
+$body .= "\nConsent to Privacy Policy: yes\nSent: " . date('Y-m-d H:i') . "\n";
 
 $headers  = "From: Prime Cleaning Website <{$FROM}>\r\n";
 $replyTo  = filter_var($fields['Email'], FILTER_VALIDATE_EMAIL);

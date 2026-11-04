@@ -111,6 +111,11 @@ const validate = (form) => {
     wrap.classList.toggle("has-error", !ok);
     if (!ok && !firstInvalid) firstInvalid = field;
   });
+  const consent = form.querySelector('input[name="consent"]');
+  if (consent) {
+    consent.closest(".consent").classList.toggle("has-error", !consent.checked);
+    if (!consent.checked && !firstInvalid) firstInvalid = consent;
+  }
   if (firstInvalid) firstInvalid.focus();
   return !firstInvalid;
 };
@@ -119,7 +124,7 @@ document.querySelectorAll("[data-lead-form]").forEach((form) => {
   const status = form.querySelector(".form-status");
   const button = form.querySelector('button[type="submit"]');
 
-  form.addEventListener("input", (e) => e.target.closest(".field")?.classList.remove("has-error"));
+  form.addEventListener("input", (e) => e.target.closest(".field, .consent")?.classList.remove("has-error"));
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -128,7 +133,7 @@ document.querySelectorAll("[data-lead-form]").forEach((form) => {
 
     if (!validate(form)) {
       status.className = "form-status err";
-      status.textContent = "Please complete the highlighted fields.";
+      status.textContent = "Please complete the highlighted fields and accept the Privacy Policy.";
       return;
     }
 

@@ -7,8 +7,10 @@ Es más rápida, más segura y no requiere actualizar plugins.
 
 ```
 index.html
+privacy.html      ← política de privacidad (borrador: que la revise un abogado)
+terms.html        ← términos y condiciones (borrador: que los revise un abogado)
 send.php          ← envía la copia del formulario a tu correo
-assets/           ← carpeta completa (css, js, img)
+assets/           ← carpeta completa (css, js, img, fonts)
 ```
 
 No subas `assets/orig/`, `.claude/` ni este archivo `.md` (no hacen falta).
@@ -25,7 +27,7 @@ Si `primecleaningteam.com.au` hoy tiene WordPress en ese mismo hosting:
 
 ## Paso 3 – Subir los archivos nuevos
 1. En tu Mac, comprime el contenido de la carpeta `primecleaning-web` en un `.zip`
-   (selecciona `index.html`, `send.php` y `assets` → clic derecho → *Comprimir*).
+   (selecciona `index.html`, `privacy.html`, `terms.html`, `send.php` y `assets` → clic derecho → *Comprimir*).
 2. En **File Manager → public_html** → **Upload** → sube el `.zip`.
 3. Clic derecho sobre el zip → **Extract**. Comprueba que `index.html` quede
    directamente en `public_html` (no dentro de una subcarpeta).
