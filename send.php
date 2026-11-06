@@ -10,19 +10,6 @@ $TO        = 'info@primecleaningteam.com.au';      // where enquiries are delive
 $FROM      = 'website@primecleaningteam.com.au';   // must be an address on your own domain
 $SUBJECT   = 'New enquiry – Prime Cleaning website';
 
-// ---- Text message (SMS) settings – sent through Twilio ----
-// Create a Twilio account, buy an SMS-capable number and paste the values here.
-// Leave TWILIO_SID empty to disable SMS (email still works).
-$TWILIO_SID   = '';                 // Account SID (starts with AC…)
-$TWILIO_TOKEN = '';                 // Auth Token
-$TWILIO_FROM  = '';                 // Your Twilio number, e.g. '+61400000000'
-// Phones that receive each enquiry by SMS: main line + backup copy line.
-// Use international format. Empty entries are skipped.
-$SMS_TO = [
-    '+61452226386',                 // main line (0452 226 386)
-    '+61420682088',                 // backup phone (0420 682 088)
-];
-
 date_default_timezone_set('Australia/Melbourne');
 header('Content-Type: application/json; charset=utf-8');
 
@@ -104,31 +91,4 @@ $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
 
 $sent = mail($TO, '=?UTF-8?B?' . base64_encode($SUBJECT) . '?=', $body, $headers, '-f' . $FROM);
 
-// SMS: short summary to each phone in $SMS_TO
-$smsSent = false;
-if ($TWILIO_SID !== '' && $TWILIO_TOKEN !== '' && $TWILIO_FROM !== '') {
-    $sms = "Prime Cleaning enquiry: {$fields['Name']}, {$fields['Phone']}";
-    if ($fields['Service'] !== '') $sms .= ", {$fields['Service']}";
-    if ($fields['Suburb'] !== '')  $sms .= ", {$fields['Suburb']}";
-    $sms = mb_substr($sms, 0, 300);
-
-    foreach ($SMS_TO as $to) {
-        if (trim($to) === '') continue;
-        $ch = curl_init("https://api.twilio.com/2010-04-01/Accounts/{$TWILIO_SID}/Messages.json");
-        curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => http_build_query(['To' => $to, 'From' => $TWILIO_FROM, 'Body' => $sms]),
-            CURLOPT_USERPWD        => $TWILIO_SID . ':' . $TWILIO_TOKEN,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 10,
-        ]);
-        $response = curl_exec($ch);
-        $code     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        if ($response !== false && $code >= 200 && $code < 300) {
-            $smsSent = true;
-        }
-    }
-}
-
-echo json_encode(['ok' => (bool) $sent || $smsSent]);
+echo json_encode(['ok' => (bool) $sent]);

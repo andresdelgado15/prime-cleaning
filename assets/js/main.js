@@ -3,8 +3,8 @@
    ========================================================= */
 
 // ---- Settings: change these if the number or email change ----
-const WHATSAPP_NUMBER = "61452226386"; // used by the WhatsApp buttons (international format, no "+" or spaces)
-const EMAIL_ENDPOINT = "send.php";     // PHP script: emails each enquiry and sends it by SMS (works on HostPapa)
+const WHATSAPP_NUMBER = "61452226386"; // international format, no "+" or spaces (0452 226 386 → 61452226386)
+const EMAIL_ENDPOINT = "send.php";     // PHP script that emails a copy of each enquiry (works on HostPapa)
 
 document.documentElement.classList.remove("no-js");
 
@@ -84,7 +84,21 @@ document.querySelectorAll("[data-tabs]").forEach((wrap) => {
   });
 });
 
-/* ---------- Lead forms → email + SMS (via send.php) ---------- */
+/* ---------- Lead forms → WhatsApp + email ---------- */
+const LABELS = {
+  name: "Name", company: "Company", phone: "Phone", email: "Email",
+  service: "Service", suburb: "Suburb", message: "Message",
+};
+
+const buildWhatsAppText = (data) => {
+  const lines = ["*New enquiry – Prime Cleaning website*", ""];
+  Object.keys(LABELS).forEach((key) => {
+    const value = (data.get(key) || "").toString().trim();
+    if (value) lines.push(`*${LABELS[key]}:* ${value}`);
+  });
+  return lines.join("\n");
+};
+
 const validate = (form) => {
   let firstInvalid = null;
   form.querySelectorAll("input, textarea").forEach((field) => {
@@ -126,25 +140,18 @@ document.querySelectorAll("[data-lead-form]").forEach((form) => {
     const data = new FormData(form);
     if (data.get("website")) return; // honeypot: bots fill hidden field
 
-    // send.php emails the enquiry and sends it by text message (SMS) to our phones
+    // 1) Email copy (runs in the background; silently ignored where PHP isn't available)
+    fetch(EMAIL_ENDPOINT, { method: "POST", body: data, keepalive: true }).catch(() => {});
+
+    // 2) WhatsApp – opened straight from the click so browsers don't block it
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildWhatsAppText(data))}`;
+    const win = window.open(url, "_blank");
+    if (win) win.opener = null; else window.location.href = url;
+
     button.classList.add("is-loading");
-    button.disabled = true;
-    fetch(EMAIL_ENDPOINT, { method: "POST", body: data })
-      .then((res) => res.json())
-      .then((result) => {
-        if (!result.ok) throw new Error("send failed");
-        status.className = "form-status ok";
-        status.textContent = "Thanks! We've received your enquiry and will reply shortly.";
-        form.reset();
-      })
-      .catch(() => {
-        status.className = "form-status err";
-        status.textContent = "Sorry, your enquiry could not be sent. Please call us on 0452 226 386.";
-      })
-      .finally(() => {
-        button.classList.remove("is-loading");
-        button.disabled = false;
-      });
+    status.className = "form-status ok";
+    status.textContent = "Thanks! WhatsApp is opening — just press send and we'll reply shortly.";
+    setTimeout(() => { button.classList.remove("is-loading"); form.reset(); }, 1500);
   });
 });
 
