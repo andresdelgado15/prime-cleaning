@@ -20,7 +20,7 @@ $TWILIO_FROM  = '';                 // Your Twilio number, e.g. '+61400000000'
 // Use international format. Empty entries are skipped.
 $SMS_TO = [
     '+61452226386',                 // main line (0452 226 386)
-    '',                             // backup phone – add the number here
+    '+61420682088',                 // backup phone (0420 682 088)
 ];
 
 date_default_timezone_set('Australia/Melbourne');
